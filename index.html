@@ -2,22 +2,116 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Обо мне</title>
+    <title>Мои задачи</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        h1 {
+            margin-bottom: 10px;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #f5f5f5;
+            border-radius: 6px;
+        }
+        button {
+            margin-left: 8px;
+            cursor: pointer;
+        }
+        .done {
+            text-decoration: line-through;
+            color: #888;
+        }
+        input {
+            padding: 8px;
+            width: 70%;
+        }
+    </style>
 </head>
 <body>
-    <h1>Петрухан Елизавета</h1>  
 
-    <h2>Что умею:</h2>
-    <ul>
-        <li>Разрабатывать веб-приложения и интернет-магазины</li>
-        <li>Работать с HTML, CSS, JavaScript и облачными сервисами</li>
-        <li>Создавать и настраивать проекты с использованием Git и GitHub</li>
-    </ul>
+    <h1>Петрухан Елизавета</h1>
+    <p>Список задач (учебный проект)</p>
 
-    <p>
-        <a href="https://github.com/DurachokVseyPlaneti/cloud-project" target="_blank">
-            Мой репозиторий на GitHub
-        </a>
-    </p>
+    <div>
+        <input type="text" id="taskInput" placeholder="Новая задача...">
+        <button onclick="addTask()">Добавить</button>
+    </div>
+
+    <ul id="taskList"></ul>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // ===== ВСТАВЬ СВОИ ДАННЫЕ ИЗ SUPABASE =====
+        const SUPABASE_URL = 'https://DurachokVseyPlaneti.supabase.co';
+
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Загрузка всех задач
+        async function loadTasks() {
+            const { data, error } = await db.from('tasks').select('*').order('id');
+            if (error) {
+                console.error(error);
+                return;
+            }
+
+            const list = document.getElementById('taskList');
+            list.innerHTML = '';
+
+            data.forEach(t => {
+                const li = document.createElement('li');
+                if (t.done) {
+                    li.classList.add('done');
+                }
+
+                li.innerHTML = `
+                    <span>${t.title}</span>
+                    <div>
+                        ${!t.done ? `<button onclick="completeTask(${t.id})">Сделано</button>` : ''}
+                        <button onclick="deleteTask(${t.id})">Удалить</button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        // Добавление новой задачи
+        async function addTask() {
+            const input = document.getElementById('taskInput');
+            const title = input.value.trim();
+            if (!title) return;
+
+            await db.from('tasks').insert({ title: title, done: false });
+            input.value = '';
+            loadTasks();
+        }
+
+        // Отметить задачу как выполненную
+        async function completeTask(id) {
+            await db.from('tasks').update({ done: true }).eq('id', id);
+            loadTasks();
+        }
+
+        // Удаление задачи
+        async function deleteTask(id) {
+            await db.from('tasks').delete().eq('id', id);
+            loadTasks();
+        }
+
+        // При загрузке страницы сразу показываем задачи
+        loadTasks();
+    </script>
 </body>
 </html>
